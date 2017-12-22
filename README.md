@@ -3,7 +3,7 @@
 Generates files for a given GroupMe user. 
 
 ### What is this repository for? ###
-* Create a file with a list of all your GroupMe's and the datetime they were created. 
+Create a file with a list of all your GroupMe's and the datetime they were created. 
 
 Given a group, 
 * Create a file with all messages. 
