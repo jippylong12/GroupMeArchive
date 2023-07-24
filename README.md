@@ -46,9 +46,4 @@ Feed those into the function and it will do the rest.
 
 ### Contribution guidelines ###
 
-Do whatever you want with it just credit me. 
-
-### Who do I talk to? ###
-
-Marcus Salinas
-markysalinas12@gmail.com
+Do whatever you want with it. Please just credit me. 
