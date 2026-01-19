@@ -16,8 +16,18 @@ For a given group, generates three CSV files:
 | `message_count.csv` | User ID, total message count per user |
 | `unique_names.csv` | User ID, list of all names that user has used |
 
-### Image Download (`analysis.py`)
-Downloads all images shared in a group to a local directory.
+### Analysis Tools (`analysis.py`)
+Utilities for working with archived message data.
+
+**Workflow:** Run `group_archive()` first to create `historic_messages.csv`, then use analysis tools.
+
+| Function | Reads From | Outputs To |
+|----------|------------|------------|
+| `load_messages()` | `./historic_messages.csv` | Returns list in memory |
+| `urls(messages)` | In-memory message list | Returns list of (url, timestamp) tuples |
+| `download_images(group_name)` | `./historic_messages.csv` | `./Images/{group_name}/` directory |
+
+> **Note:** All paths are relative to your current working directory when running the script.
 
 ## Requirements
 
