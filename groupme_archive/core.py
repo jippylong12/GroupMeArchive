@@ -22,6 +22,8 @@ class GroupMeClient:
     def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         url = f"{self.BASE_URL}/{endpoint.lstrip('/')}"
         response = self.session.get(url, params=params)
+        if response.status_code == 304:
+            return {}
         response.raise_for_status()
         return response.json()["response"]
 
@@ -51,23 +53,17 @@ class GroupMeClient:
             if before_id:
                 params["before_id"] = before_id
             
-            try:
-                batch = self._get(f"groups/{group_id}/messages", params=params)
-                messages = batch.get("messages", [])
-                if not messages:
-                    break
-                    
-                for msg in messages:
-                    yield msg
+            batch = self._get(f"groups/{group_id}/messages", params=params)
+            messages = batch.get("messages", [])
+            if not messages:
+                break
                 
-                before_id = messages[-1]["id"]
-                # Respectful rate limiting
-                time.sleep(0.1)
-                
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 304: # No more messages
-                    break
-                raise
+            for msg in messages:
+                yield msg
+            
+            before_id = messages[-1]["id"]
+            # Respectful rate limiting
+            time.sleep(0.1)
 
 def formatted_timestamp(ts: Any) -> str:
     """Convert timestamp to formatted string."""
