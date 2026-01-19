@@ -41,7 +41,7 @@ def download_images(group_name: str, csv_path: Path = Path('historic_messages.cs
     url_list = extract_urls(messages)
     
     if output_dir is None:
-        output_dir = Path.cwd() / 'Images' / group_name
+        output_dir = Path.cwd() / 'archives' / group_id / 'media'
         
     output_dir.mkdir(parents=True, exist_ok=True)
     

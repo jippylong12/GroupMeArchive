@@ -157,10 +157,8 @@ token.txt
 .groupy.key
 
 # Exported data
+archives/
 *.csv
 *.txt
 !README.md
 !pyproject.toml
-
-# Downloaded images
-Images/

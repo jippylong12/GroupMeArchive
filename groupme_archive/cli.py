@@ -70,13 +70,13 @@ def list_groups(
     console.print(f"\n[bold green]Successfully exported group listing to {output}[/bold green]")
 
 @app.command()
-def archive(
-    group_id: Optional[str] = typer.Option(None, help="ID of the group to archive. If omitted, lists groups first."),
+def fetch(
+    group_id: Optional[str] = typer.Option(None, help="ID of the group to fetch. If omitted, lists groups first."),
     token: Optional[str] = typer.Option(None, help="GroupMe Access Token"),
     output_dir: Optional[Path] = typer.Option(None, help="Directory to save the archive files. Defaults to archives/[name]_[id]"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs")
 ):
-    """Archive all messages from a specific group."""
+    """Fetch all messages from a specific group."""
     setup_logging(verbose)
     client = get_client(token)
     exporter = Exporter(client)
@@ -86,7 +86,7 @@ def archive(
         with console.status("[bold green]Fetching groups..."):
             groups = client.list_groups()
         
-        console.print("\n[bold]Select a group ID to archive:[/bold]")
+        console.print("\n[bold]Select a group ID to fetch:[/bold]")
         for g in groups:
             console.print(f"  [cyan]{g['group_id']}[/cyan] : {g['name']}")
         return
@@ -96,30 +96,52 @@ def archive(
         safe_name = exporter._safe_name(group_data['name'])
         output_dir = Path("archives") / f"{safe_name}_{group_id}"
 
-    with console.status(f"[bold green]Archiving group {group_id} to {output_dir}..."):
+    with console.status(f"[bold green]Fetching group {group_id} to {output_dir}..."):
         exporter.archive_group(group_id, output_dir)
     
-    console.print(f"[bold green]Archive complete! Files saved to {output_dir}[/bold green]")
+    console.print(f"[bold green]Fetch complete! Files saved to {output_dir}[/bold green]")
 
 @app.command()
 def download_images(
-    group_subdir: str = typer.Argument(..., help="Subdirectory name in archives/ (e.g. Tennis_65850956)"),
+    group_id: str = typer.Argument(..., help="ID of the group to download images for"),
+    token: Optional[str] = typer.Option(None, help="GroupMe Access Token"),
     csv_path: Optional[Path] = typer.Option(None, help="Path to the archived messages CSV"),
     output_dir: Optional[Path] = typer.Option(None, help="Directory to save images"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs")
 ):
     """Download images from an existing archive CSV."""
     setup_logging(verbose)
+    client = get_client(token)
+    exporter = Exporter(client)
+
+    # Resolve archive directory if not provided
+    if not output_dir or not csv_path:
+        # Try to find the directory pattern archives/*_{group_id}
+        archives_dir = Path("archives")
+        matches = list(archives_dir.glob(f"*_{group_id}")) if archives_dir.exists() else []
+        
+        if matches:
+            root_dir = matches[0]
+        else:
+            # Fallback to fetching group name to construct path
+            group_data = client.get_group(group_id)
+            safe_name = exporter._safe_name(group_data['name'])
+            root_dir = archives_dir / f"{safe_name}_{group_id}"
+            
+        if not csv_path:
+            csv_path = root_dir / "historic_messages.csv"
+        
+        if not output_dir:
+            output_dir = root_dir / "media"
     
-    if not csv_path:
-        csv_path = Path("archives") / group_subdir / "historic_messages.csv"
-    
-    if not output_dir:
-        output_dir = Path("archives") / group_subdir
+    if not csv_path.exists():
+        console.print(f"[red]Error: CSV file not found at {csv_path}[/red]")
+        console.print("Please run the 'fetch' command first.")
+        raise typer.Exit(code=1)
     
     with console.status(f"[bold green]Downloading images from {csv_path} to {output_dir}..."):
-        dl_images(group_subdir, csv_path, output_dir)
-    console.print("[bold green]Image download complete.[/bold green]")
+        dl_images(group_id, csv_path, output_dir)
+    console.print(f"[bold green]Image download complete. Saved to {output_dir}[/bold green]")
 
 if __name__ == "__main__":
     app()
