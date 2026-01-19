@@ -1,49 +1,115 @@
-# README #
+# GroupMe Archive
 
-Generates files for a given GroupMe user. 
+A Python tool for archiving and analyzing GroupMe chat data.
 
-### What is this repository for? ###
-Create a file with a list of all your GroupMe's and the datetime they were created. 
+## Features
 
-Given a group, 
-* Create a file with all messages. 
-* Create a file with a count of each user's messages
-* Create a file with every user's names they have used. 
+### Group Listing (`group_created`)
+Creates a file listing all your GroupMe groups with their creation timestamps.
 
-For the historic messages we are given:
-* User ID
-* Name at the time of message creation
-* Actual Message
-* Attachments if any
-* Created At TimeStamp
+### Group Archive (`group_archive`)
+For a given group, generates three CSV files:
 
-For the message count file:
-* User ID
-* Number of Messages
+| File | Contents |
+|------|----------|
+| `historic_messages.csv` | User ID, name at time of message, message text, image attachments (URLs), timestamp |
+| `message_count.csv` | User ID, total message count per user |
+| `unique_names.csv` | User ID, list of all names that user has used |
 
-For unique names file:
-* User ID
-* List of names they have used. 
+### Image Download (`analysis.py`)
+Downloads all images shared in a group to a local directory.
 
-### How do I get set up? ###
+## Requirements
 
-There are only two function to worry about. 
-1) group_created - lists all groups and timestamps
-2) group_archive - the other three files
+- Python 3.x
+- [Groupy](https://pypi.org/project/groupy/) library
 
-The current repo is set up for group archive.
+```bash
+pip install groupy
+```
 
-Before all that make sure to go to the groupme developer website and log in and get an access token. Then you must create a file called 'token.txt' in the same directory.
-Then paste that token into the first line. That is where the program will read the token.
+## Setup
 
-To use group_created just create a script that imports group_created and feed it the token. You can also just copy the token directly into the function. 
+1. **Get your API token:**
+   - Go to [GroupMe Developers](https://dev.groupme.com/)
+   - Log in with your GroupMe account
+   - Copy your access token
 
-For group archive it is the same thing but you need the group id and the client. 
+2. **Create token file:**
+   - Create a file named `token.txt` in the project directory
+   - Paste your access token on the first line
 
-You can obtain the group id by client.groups.list() and then looking for the group you want and getting their id. 
+## Usage
 
-Feed those into the function and it will do the rest. 
+### List All Groups
+```python
+from main import group_created
 
-### Contribution guidelines ###
+with open('token.txt', 'r') as f:
+    token = f.readline().strip()
 
-Do whatever you want with it. Please just credit me. 
+group_created(token)
+# Creates: Groups Created At.txt
+```
+
+### Archive a Group
+```python
+from groupy.client import Client
+
+with open('token.txt', 'r') as f:
+    token = f.readline().strip()
+
+client = Client.from_token(token)
+
+# List all groups to find the group ID you want
+groups = client.groups.list()
+for group in groups:
+    print(f"{group.name}: {group.data['group_id']}")
+
+# Archive a specific group
+from main import group_archive
+group_id = 'YOUR_GROUP_ID'
+group_archive(group_id, client)
+# Creates: historic_messages.csv, message_count.csv, unique_names.csv
+```
+
+### Download Images
+```python
+from analysis import download_images
+
+download_images('MyGroupName')
+# Downloads all images to: ./Images/MyGroupName/
+```
+
+## Output Files
+
+### `Groups Created At.txt`
+```
+Group Name: 01-15-2024 14:30:00
+Another Group: 12-25-2023 09:00:00
+```
+
+### `historic_messages.csv`
+| Column | Description |
+|--------|-------------|
+| 1 | User ID |
+| 2 | Display name at time of message |
+| 3 | Message text |
+| 4 | Comma-separated image URLs |
+| 5 | Timestamp (MM-DD-YYYY HH:MM:SS) |
+
+### `message_count.csv`
+| Column | Description |
+|--------|-------------|
+| 1 | User ID (or "Total") |
+| 2 | Message count |
+
+### `unique_names.csv`
+| Column | Description |
+|--------|-------------|
+| 1 | User ID |
+| 2+ | Names that user has used |
+
+## License
+
+Do whatever you want with it. Please just credit me.
