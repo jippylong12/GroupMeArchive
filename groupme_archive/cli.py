@@ -46,7 +46,7 @@ def setup_logging(verbose: bool):
 @app.command()
 def list_groups(
     token: Optional[str] = typer.Option(None, help="GroupMe Access Token"),
-    output: Path = typer.Option(Path("Groups Created At.txt"), help="File to save the list"),
+    output: Path = typer.Option(Path("archives/groups_list.txt"), help="File to save the list"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs")
 ):
     """List all groups and their creation timestamps."""
@@ -73,7 +73,7 @@ def list_groups(
 def archive(
     group_id: Optional[str] = typer.Option(None, help="ID of the group to archive. If omitted, lists groups first."),
     token: Optional[str] = typer.Option(None, help="GroupMe Access Token"),
-    output_dir: Path = typer.Option(Path("."), help="Directory to save the archive files"),
+    output_dir: Optional[Path] = typer.Option(None, help="Directory to save the archive files. Defaults to archives/[name]_[id]"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs")
 ):
     """Archive all messages from a specific group."""
@@ -91,22 +91,34 @@ def archive(
             console.print(f"  [cyan]{g['group_id']}[/cyan] : {g['name']}")
         return
 
-    with console.status(f"[bold green]Archiving group {group_id}..."):
+    if not output_dir:
+        group_data = client.get_group(group_id)
+        safe_name = exporter._safe_name(group_data['name'])
+        output_dir = Path("archives") / f"{safe_name}_{group_id}"
+
+    with console.status(f"[bold green]Archiving group {group_id} to {output_dir}..."):
         exporter.archive_group(group_id, output_dir)
     
     console.print(f"[bold green]Archive complete! Files saved to {output_dir}[/bold green]")
 
 @app.command()
 def download_images(
-    group_name: str = typer.Argument(..., help="Name for the images subdirectory"),
-    csv_path: Path = typer.Option(Path("historic_messages.csv"), help="Path to the archived messages CSV"),
+    group_subdir: str = typer.Argument(..., help="Subdirectory name in archives/ (e.g. Tennis_65850956)"),
+    csv_path: Optional[Path] = typer.Option(None, help="Path to the archived messages CSV"),
     output_dir: Optional[Path] = typer.Option(None, help="Directory to save images"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs")
 ):
     """Download images from an existing archive CSV."""
     setup_logging(verbose)
-    with console.status("[bold green]Downloading images..."):
-        dl_images(group_name, csv_path, output_dir)
+    
+    if not csv_path:
+        csv_path = Path("archives") / group_subdir / "historic_messages.csv"
+    
+    if not output_dir:
+        output_dir = Path("archives") / group_subdir
+    
+    with console.status(f"[bold green]Downloading images from {csv_path} to {output_dir}..."):
+        dl_images(group_subdir, csv_path, output_dir)
     console.print("[bold green]Image download complete.[/bold green]")
 
 if __name__ == "__main__":

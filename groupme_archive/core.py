@@ -78,6 +78,10 @@ class Exporter:
     def __init__(self, client: GroupMeClient):
         self.client = client
 
+    def _safe_name(self, name: str) -> str:
+        """Create a file-safe name from a group name."""
+        return "".join([c if c.isalnum() or c in (" ", "-", "_") else "" for c in name]).strip().replace(" ", "_")
+
     def list_groups_summary(self) -> List[Dict[str, str]]:
         """List all groups with their IDs and creation times."""
         groups = self.client.list_groups()
@@ -93,6 +97,7 @@ class Exporter:
     def export_group_listing(self, output_path: Path = Path('Groups Created At.txt')):
         """Write group listing to a file."""
         groups = self.list_groups_summary()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w', encoding='utf8') as f:
             for group in groups:
                 f.write(f"[{group['id']}] {group['name']}: {group['created_at']}\n")
