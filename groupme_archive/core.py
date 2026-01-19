@@ -82,17 +82,24 @@ class Exporter:
     def __init__(self, client: GroupMeClient):
         self.client = client
 
-    def list_groups_summary(self) -> Dict[str, str]:
-        """List all groups and their creation times."""
+    def list_groups_summary(self) -> List[Dict[str, str]]:
+        """List all groups with their IDs and creation times."""
         groups = self.client.list_groups()
-        return {group['name']: formatted_timestamp(group['created_at']) for group in groups}
+        return [
+            {
+                'id': group['group_id'],
+                'name': group['name'],
+                'created_at': formatted_timestamp(group['created_at'])
+            }
+            for group in groups
+        ]
 
     def export_group_listing(self, output_path: Path = Path('Groups Created At.txt')):
         """Write group listing to a file."""
-        group_times = self.list_groups_summary()
+        groups = self.list_groups_summary()
         with open(output_path, 'w', encoding='utf8') as f:
-            for name, timestamp in group_times.items():
-                f.write(f"{name}: {timestamp}\n")
+            for group in groups:
+                f.write(f"[{group['id']}] {group['name']}: {group['created_at']}\n")
         logger.info(f"Group listing exported to {output_path}")
 
     def archive_group(self, group_id: str, output_dir: Path = Path('.')):

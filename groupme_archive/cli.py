@@ -5,6 +5,7 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.table import Table
 from rich.logging import RichHandler
 import logging
 
@@ -54,9 +55,19 @@ def list_groups(
     exporter = Exporter(client)
     
     with console.status("[bold green]Fetching groups..."):
+        groups = exporter.list_groups_summary()
         exporter.export_group_listing(output)
     
-    console.print(f"[bold green]Successfully exported group listing to {output}[/bold green]")
+    table = Table(title="GroupMe Groups")
+    table.add_column("ID", style="cyan")
+    table.add_column("Name", style="green")
+    table.add_column("Created At", style="magenta")
+    
+    for g in groups:
+        table.add_row(g['id'], g['name'], g['created_at'])
+        
+    console.print(table)
+    console.print(f"\n[bold green]Successfully exported group listing to {output}[/bold green]")
 
 @app.command()
 def archive(
